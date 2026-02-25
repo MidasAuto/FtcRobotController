@@ -117,6 +117,12 @@ public class SensorLimelight3A extends LinearOpMode {
 
                 telemetry.addData("Botpose", botpose.toString());
 
+                List<LLResultTypes.FiducialResult> tags = result.getFiducialResults();
+
+                for (LLResultTypes.FiducialResult tag : tags) {
+                    int id = tag.getFiducialId();
+                    telemetry.addData("AprilTag ID", id);
+                }
                 // Access barcode results
                 List<LLResultTypes.BarcodeResult> barcodeResults = result.getBarcodeResults();
                 for (LLResultTypes.BarcodeResult br : barcodeResults) {
