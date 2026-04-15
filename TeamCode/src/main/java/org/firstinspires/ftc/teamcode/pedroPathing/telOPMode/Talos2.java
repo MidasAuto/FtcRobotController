@@ -15,7 +15,7 @@ import java.util.List;
 
 
 @TeleOp(name = "New Robot")
-public class newTelop extends OpMode {
+public class Talos2 extends OpMode {
 
     private Limelight3A limelight;
 
