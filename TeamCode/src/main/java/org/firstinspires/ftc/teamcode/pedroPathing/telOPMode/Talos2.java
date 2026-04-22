@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode.pedroPathing.telOPMode;
 
+import static java.lang.Math.sqrt;
+
 import com.qualcomm.hardware.dfrobot.HuskyLens;
 import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.hardware.limelightvision.LLResultTypes;
@@ -10,30 +12,33 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
+
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 
 import java.util.List;
 
 
-@TeleOp(name = "New Robot")
+@TeleOp(name = "Talos2")
 public class Talos2 extends OpMode {
 
     private Limelight3A limelight;
 
-    DcMotor frontRightMotor, backLeftMotor, backRightMotor, frontLeftMotor, intakeMotor;
+    DcMotor frontRightMotor, backLeftMotor, backRightMotor, frontLeftMotor, intakeMotor, holderMotor1, holderMotor2;
     DcMotorEx launch;
     ColorSensor slotSensor1,
             slotSensor2,
             slotSensor3,
             launchSensor;
-    CRServo holderServo1,
-            holderServo2,
-            holderServo3;
     HuskyLens huskyLens;
     HuskyLens.Block[] blocks;
 
+    int power = 260;
 
 
-    boolean holder1, holder2, holder3;
+
+
+    boolean upPressed = false, downPressed = false;
 
     //----------------------
 
@@ -47,11 +52,9 @@ public class Talos2 extends OpMode {
         backLeftMotor = hardwareMap.get(DcMotor.class, "leftBack");
         backRightMotor = hardwareMap.get(DcMotor.class, "rightBack");
         intakeMotor = hardwareMap.get(DcMotor.class, "intakeMotor");
-        //launch = hardwareMap.get(DcMotorEx.class, "launch");
-        //servos
-        holderServo1 = hardwareMap.get(CRServo.class, "holderServo1");
-        holderServo2 = hardwareMap.get(CRServo.class, "holderServo2");
-        holderServo3 = hardwareMap.get(CRServo.class, "holderServo3");
+        launch = hardwareMap.get(DcMotorEx.class, "launchMotor");
+        holderMotor1 = hardwareMap.get(DcMotor.class, "holderMotor1");
+        holderMotor2 = hardwareMap.get(DcMotor.class, "holderMotor2");
         //Color sensor
         /*slotSensor1 = hardwareMap.get(ColorSensor.class, "slotSensor1");
         slotSensor2 = hardwareMap.get(ColorSensor.class, "slotSensor2");
@@ -70,7 +73,12 @@ public class Talos2 extends OpMode {
         backRightMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         backLeftMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
+        // reversed motors
+        frontRightMotor.setDirection(DcMotor.Direction.REVERSE);
+        backLeftMotor.setDirection(DcMotorSimple.Direction.REVERSE);
+        holderMotor1.setDirection(DcMotorSimple.Direction.REVERSE);
 
+        limelight.start();
 
         ///sorterMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
     }
@@ -98,21 +106,53 @@ public class Talos2 extends OpMode {
         //holder3 = slotSensor3.green() > 200;
 
         if (gamepad2.right_trigger > 0) {
-            holderServo1.setPower(1);
-            holderServo2.setPower(1);
-            holderServo3.setPower(1);
 
-            launch.setVelocity(180);
+            holderMotor2.setPower(0);
+            launch.setVelocity(-power, AngleUnit.DEGREES);
+        }
+        else {
+
+            launch.setVelocity(0);
+        }
+        if (gamepad2.right_bumper) {
+            launch.setVelocity(180, AngleUnit.DEGREES);
+        }
+        if (gamepad2.left_bumper) {
+            holderMotor1.setPower(-1);
+            holderMotor2.setPower(-1);
+            intakeMotor.setPower(-.5);
         }
 
-        if (gamepad1.left_trigger > 0) {
-            intakeMotor.setPower(-.5);
-        } else {
+
+
+        if (gamepad2.dpad_up && !upPressed){
+            power+=1;
+            upPressed = true;
+        } else if (!gamepad2.dpad_up) {
+            upPressed = false;
+        }
+        if (gamepad2.dpad_down && !downPressed) {
+            power-=1;
+            downPressed = true;
+        } else if (!gamepad2.dpad_down) {
+            downPressed = false;
+        }
+        if (gamepad2.left_trigger > 0){
+            holderMotor1.setPower(1);
+            holderMotor2.setPower(1);
             intakeMotor.setPower(1);
         }
-        holderServo1.setPower(-4);
-        holderServo2.setPower(-4);
-        holderServo3.setPower(-4);
+        else {
+            holderMotor1.setPower(0);
+
+
+        }
+        if (gamepad2.dpad_left){
+            launch.setPower(1);
+            intakeMotor.setPower(0);
+        }
+
+        powerCalc();
         /*if (holder1) {
             holderServo1.setPower(0);
         } else {
@@ -130,7 +170,7 @@ public class Talos2 extends OpMode {
         }*/
 
 
-        telemetry();
+        //telemetry();
     }
 
     //----------------------
@@ -153,14 +193,18 @@ public class Talos2 extends OpMode {
             id = tag.getFiducialId();
         }
 
-        if (id == 25) {
-            distance = result.getTa();
-            telemetry.addData("distance: ", distance);
-            telemetry.update();
+        if (id == 20) {
+            distance = result.getTy();
         } else distance = 0;
+
+        telemetry.addData("Tag id", id);
+        telemetry.addData("Distance: ", distance);
+        telemetry.addData("Power: ", power);
+        telemetry.addData("real Power: ", launch.getVelocity(AngleUnit.DEGREES));
+        telemetry.addData("x: ", result.getTx());
+        telemetry.update();
 
         return distance;
 
     }
-
 }

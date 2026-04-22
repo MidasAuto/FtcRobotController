@@ -76,8 +76,8 @@ public class Examples extends OpMode {
         pathChain = follower.pathBuilder()
                 .addPath(new BezierLine(startPose, scorePose))
                 .setLinearHeadingInterpolation(startPose.getHeading(), scorePose.getHeading())
-                .addTemporalCallback(100, shootAction(Methods.MethodsInside.virtualShooterPose(), follower.getPose(), 3))
-                .addParametricCallback(1, shootAction(targetPose, follower.getPose(), 3))
+                .addTemporalCallback(100, shootAction(Methods.MethodsInside.virtualShooterPose(), startPose, 3))
+                .addParametricCallback(1, shootAction(targetPose, startPose, 3))
                 .build();
 
         follower.followPath(pathChain);
